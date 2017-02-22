@@ -51,6 +51,9 @@
 /******************************************************************************
  * CONSTANTS
  */
+
+   
+   
 // General UART frame offsets
 #define FRAME_SOF_OFFSET                    0
 #define FRAME_LENGTH_OFFSET                 1
@@ -175,8 +178,23 @@ void zb_HandleOsalEvent( uint16 event )
     // Start the device
     appState = APP_START;
     zb_StartRequest();
-  }
+    //set pin 0_6 to output. for door control.
+    MCU_IO_DIR_OUTPUT(0,6);
 
+    
+    MCU_IO_INPUT(0,4,MCU_IO_PULLUP);
+  }
+  //when the door is closed, set LED off.
+  if ( event & DOOR_CLOSED_EVENT){
+    //set Pin 0_5 to LOW, so disable led when door is closed.
+    MCU_IO_SET_HIGH(0,5);
+    
+  }
+  if ( event & DOOR_OPEN_EVENT){
+    //set Pin 0_5 to LOW, so disable led when door is closed.
+    MCU_IO_SET_LOW(0,5);
+    
+  }
   if ( event & MY_START_EVT )
   {
     zb_StartRequest();
@@ -240,6 +258,9 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      MCU_IO_TGL(0,6);
+      
+      
     }
     if ( keys & HAL_KEY_SW_3 )
     {

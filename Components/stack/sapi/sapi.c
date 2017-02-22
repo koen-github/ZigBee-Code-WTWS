@@ -108,8 +108,8 @@ const pTaskEventHandlerFn tasksArr[] = {
 #endif
   APS_event_loop,
   ZDApp_event_loop,
-
-  SAPI_ProcessEvent
+  SAPI_ProcessEvent,
+  USER_event_loop
 };
 
 const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -713,6 +713,27 @@ void SAPI_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint
 #endif
   }
 }
+
+/*********************************************************************
+* Custom User Events, created by KAS ( 22-2017);
+*/
+UINT16 USER_event_loop( byte task_id, UINT16 events )
+{
+  int doorValue = MCU_IO_GET(0,4);
+  static bool doorIsClosed;
+  if(doorValue == 0 && !doorIsClosed){
+    doorIsClosed = true;
+    zb_HandleOsalEvent( DOOR_CLOSED_EVENT );
+    return (events ^ DOOR_CLOSED_EVENT);
+  }
+  else{
+    doorIsClosed = false;
+    zb_HandleOsalEvent( DOOR_OPEN_EVENT );
+    return (events ^ DOOR_OPEN_EVENT);
+  }
+ 
+}
+
 /*********************************************************************
  * @fn      SAPI_ProcessEvent
  *

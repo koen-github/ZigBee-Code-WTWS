@@ -55,6 +55,8 @@
 #define ZB_BIND_TIMER                     0x2000    //0x0002
 #define ZB_ENTRY_EVENT                    0x1000    //0x0004
 #define ZB_USER_EVENTS                    0x00FF
+#define DOOR_CLOSED_EVENT                 0x5000
+#define DOOR_OPEN_EVENT                   0x6000
 
 // Find Device Search Types
 #define ZB_IEEE_SEARCH                    1
@@ -407,10 +409,12 @@ extern void zb_AllowBindConfirm( uint16 source );
 
 extern void zb_HandleKeys( uint8 shift, uint8 keys );
 
+extern UINT16 USER_event_loop( byte task_id, UINT16 events );
 
 /* External declarations required by SAPI */
 extern UINT16 SAPI_ProcessEvent( byte task_id, UINT16 events );
 extern void SAPI_Init( byte task_id );
+extern void USER_event( byte task_id );
 
 #ifdef __cplusplus
 }

@@ -80,7 +80,14 @@ void osalInitTasks( void )
 #endif
   APS_Init( taskID++ );
   ZDApp_Init( taskID++ );
+  USER_event( taskID++ );
   SAPI_Init( taskID );
+  
+}
+
+void USER_event( byte task_id ){
+  osal_set_event(task_id, DOOR_OPEN_EVENT);
+  osal_set_event(task_id, DOOR_CLOSED_EVENT);
 }
 
 /******************************************************************************
