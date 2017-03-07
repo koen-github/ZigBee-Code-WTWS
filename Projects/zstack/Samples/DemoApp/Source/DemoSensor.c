@@ -60,6 +60,7 @@
 #define MY_START_EVT                        0x0001
 #define MY_REPORT_EVT                       0x0002
 #define MY_FIND_COLLECTOR_EVT               0x0004
+#define MY_TIMER_EVENT                      0x0005
 
 // ADC definitions for CC2430/CC2530 from the hal_adc.c file
 #if defined (HAL_MCU_CC2530)
@@ -85,6 +86,9 @@ static uint16 myBindRetryDelay =  2000;        // milliseconds
 static uint8 myStartRetryDelay =    10;        // milliseconds
 
 static uint16 parentShortAddr;
+
+static uint8 adcInterval =      100;
+static uint8 lightIntensity =   120;
 
 /******************************************************************************
  * GLOBAL VARIABLES
@@ -141,11 +145,31 @@ void zb_HandleOsalEvent( uint16 event )
   {
   }
 
+  if(event & MY_TIMER_EVENT)
+  {
+    osal_start_reload_timer(osal_self(),MY_TIMER_EVENT,adcInterval);
+    uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
+    if(lux < lightIntensity )
+    {
+       MCU_IO_SET_HIGH(1,2);
+    }else{
+       MCU_IO_SET_LOW(1,2);
+    }
+  }
+  
   if( event & ZB_ENTRY_EVENT )
   {
     // blind LED 1 to indicate joining a network
     HalLedBlink ( HAL_LED_1, 0, 50, 500 );
 
+    //init timer
+    osal_start_timerEx(osal_self(),MY_TIMER_EVENT,adcInterval);
+    //use pin 1,2 as oudput
+    MCU_IO_DIR_OUTPUT(1,2);
+    //set pind for ldr
+     MCU_IO_OUTPUT(0,5,1);
+     MCU_IO_OUTPUT(0,0,0);
+    
     // Start the device
     appState = APP_START;
     zb_StartRequest();
@@ -158,6 +182,7 @@ void zb_HandleOsalEvent( uint16 event )
 
   if ( event & MY_REPORT_EVT )
   {
+
     if ( appState == APP_RUN )
     {
       sendReport();
@@ -167,7 +192,7 @@ void zb_HandleOsalEvent( uint16 event )
   if ( event & MY_FIND_COLLECTOR_EVT )
   {
     // blink LED 2 to indicate discovery and binding
-    HalLedBlink ( HAL_LED_2, 0, 50, 500 );
+    //HalLedBlink ( HAL_LED_2, 0, 50, 500 );
 
     // Find and bind to a collector device
     appState = APP_BIND;
@@ -217,7 +242,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
         reportState = TRUE;
 
         // blink LED 2 to indicate reporting
-        HalLedBlink ( HAL_LED_2, 0, 50, 500 );
+        //HalLedBlink ( HAL_LED_2, 0, 50, 500 );
       }
     }
     if ( keys & HAL_KEY_SW_2 )
