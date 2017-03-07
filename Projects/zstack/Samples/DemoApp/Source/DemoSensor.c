@@ -90,6 +90,8 @@ static uint16 parentShortAddr;
 static uint8 adcInterval =      100;
 static uint8 lightIntensity =   120;
 
+static bool lampOn = false;
+
 /******************************************************************************
  * GLOBAL VARIABLES
  */
@@ -154,6 +156,9 @@ void zb_HandleOsalEvent( uint16 event )
        MCU_IO_SET_HIGH(1,2);
     }else{
        MCU_IO_SET_LOW(1,2);
+       if(lampOn){
+        //koen's uit bericht
+       }
     }
   }
   
@@ -192,7 +197,7 @@ void zb_HandleOsalEvent( uint16 event )
   if ( event & MY_FIND_COLLECTOR_EVT )
   {
     // blink LED 2 to indicate discovery and binding
-    //HalLedBlink ( HAL_LED_2, 0, 50, 500 );
+    HalLedBlink ( HAL_LED_2, 0, 50, 500 );
 
     // Find and bind to a collector device
     appState = APP_BIND;
@@ -242,11 +247,25 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
         reportState = TRUE;
 
         // blink LED 2 to indicate reporting
-        //HalLedBlink ( HAL_LED_2, 0, 50, 500 );
+        HalLedBlink ( HAL_LED_2, 0, 50, 500 );
       }
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      static bool lampOn = false;
+      if (lampOn){
+        uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
+        if(lux < lightIntensity )
+        {
+          //koen's uit bericht
+        }
+      
+      }else{
+      //koen's aan bericht
+      }
+      
+      
+      
     }
     if ( keys & HAL_KEY_SW_3 )
     {
