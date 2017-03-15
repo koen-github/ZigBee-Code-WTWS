@@ -65,6 +65,8 @@
 // Define the Command ID's used in this application
 #define SENSOR_REPORT_CMD_ID              2
 #define DUMMY_REPORT_CMD_ID               3
+#define LDR_REPORT_CMD_ID                 4
+#define LED_REPORT_CMD_ID                 5
 
 // Sensor report data format
 #define SENSOR_TEMP_OFFSET                0
