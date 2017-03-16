@@ -183,8 +183,8 @@ void zb_HandleOsalEvent( uint16 event )
     //use pin 1,2 as oudput
     MCU_IO_DIR_OUTPUT(1,2);
     //set pind for ldr
-     MCU_IO_OUTPUT(0,5,1);
-     MCU_IO_OUTPUT(0,0,0);
+    MCU_IO_OUTPUT(0,5,1);
+    MCU_IO_OUTPUT(0,0,0);
     
     // Start the device
     appState = APP_START;

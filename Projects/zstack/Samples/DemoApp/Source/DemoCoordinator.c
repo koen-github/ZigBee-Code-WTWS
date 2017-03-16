@@ -89,6 +89,8 @@
 
 // Application osal event identifiers
 #define MY_START_EVT                        0x0001
+#define MY_FIND_COLLECTOR_EVT               0x0002
+
 
 /******************************************************************************
  * TYPEDEFS
@@ -107,6 +109,10 @@ typedef struct
 static uint8 appState =             APP_INIT;
 static uint8 myStartRetryDelay =    10;          // milliseconds
 static gtwData_t gtwData;
+static bool lampIsActivated = false;
+
+//define toggl lamp
+static void toggleLamp(void);
 
 /******************************************************************************
  * LOCAL FUNCTIONS
@@ -146,7 +152,7 @@ const SimpleDescriptionFormat_t zb_SimpleDesc =
   NUM_IN_CMD_COLLECTOR,       //  Number of Input Commands
   (cId_t *) zb_InCmdList,     //  Input Command List
   NUM_OUT_CMD_COLLECTOR,      //  Number of Output Commands
-  (cId_t *) NULL              //  Output Command List
+  (cId_t *) zb_OutCmdList              //  Output Command List
 };
 
 /******************************************************************************
@@ -181,11 +187,23 @@ void zb_HandleOsalEvent( uint16 event )
     // Start the device
     appState = APP_START;
     zb_StartRequest();
+    
+    MCU_IO_DIR_OUTPUT(0,5); //set 
+    MCU_IO_SET_HIGH(0,5); //set lamp on default
+    lampIsActivated = true;
   }
 
   if ( event & MY_START_EVT )
   {
     zb_StartRequest();
+  }
+  if ( event & MY_FIND_COLLECTOR_EVT )
+  {
+    // blink LED 2 to indicate discovery and binding
+    HalLedBlink ( HAL_LED_2, 0, 50, 200 );
+
+    // Find and bind to a collector device
+    zb_BindDevice( TRUE, LED_REPORT_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -246,6 +264,9 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      //start binding with sensor
+   //   zb_GetDeviceInfo(ZB_INFO_PARENT_SHORT_ADDR, &parentShortAddr);
+      osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
     }
     if ( keys & HAL_KEY_SW_3 )
     {
@@ -254,6 +275,16 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     {
     }
   }
+}
+
+static void toggleLamp(void){
+   MCU_IO_TGL(0,5);
+   lampIsActivated = !lampIsActivated;
+   //send back to let the user know the lamp is on.
+   uint8 pData[1];
+    pData[0]= (uint8)lampIsActivated;
+    zb_SendDataRequest( ZB_BINDING_ADDR, LED_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
+
 }
 
 /******************************************************************************
@@ -316,9 +347,32 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_BindConfirm( uint16 commandId, uint8 status )
 {
-  if(commandId == LDR_REPORT_CMD_ID){
+  if( status == ZB_SUCCESS )
+  {
+   // appState = APP_RUN;
+    if(commandId == LED_REPORT_CMD_ID){
+      HalLedSet( HAL_LED_2, HAL_LED_MODE_ON );
+    }
+    // After failure reporting start automatically when the device
+    // is bound to a new gateway
+ //   if ( reportState )
+ //   {
+
+      // Start reporting
+     // osal_start_reload_timer( sapi_TaskID, MY_REPORT_EVT, myReportPeriod );
+ //   }
   }
-  (void)status;
+  else
+  {
+  //  if ( ++bindRetries >= 2 ) {
+      // Reset the system
+ //     zb_SystemReset();
+ //   }
+ //   else
+ //   {
+ //     osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
+ //   }
+  }
 }
 
 /******************************************************************************
@@ -384,8 +438,9 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
 
     // Send gateway report
     sendGtwReport(&gtwData);
-  } else if(command == LDR_REPORT_CMD_ID){
-  
+  } 
+  else if(command == LDR_REPORT_CMD_ID){
+    toggleLamp();
   }
 }
 
