@@ -120,14 +120,20 @@ static void sendGtwReport(gtwData_t *gtwData);
  * GLOBAL VARIABLES
  */
 // Inputs and Outputs for Collector device
-#define NUM_OUT_CMD_COLLECTOR           0
-#define NUM_IN_CMD_COLLECTOR            1
+#define NUM_OUT_CMD_COLLECTOR           1
+#define NUM_IN_CMD_COLLECTOR            2
 
 // List of output and input commands for Collector device
+const cId_t zb_OutCmdList[NUM_OUT_CMD_COLLECTOR] =
+{
+  LED_REPORT_CMD_ID,
+};
 const cId_t zb_InCmdList[NUM_IN_CMD_COLLECTOR] =
 {
   SENSOR_REPORT_CMD_ID,
+  LDR_REPORT_CMD_ID
 };
+
 
 // Define SimpleDescriptor for Collector device
 const SimpleDescriptionFormat_t zb_SimpleDesc =
