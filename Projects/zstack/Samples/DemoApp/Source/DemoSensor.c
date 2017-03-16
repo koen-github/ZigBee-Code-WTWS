@@ -60,7 +60,7 @@
 #define MY_START_EVT                        0x0001
 #define MY_REPORT_EVT                       0x0002
 #define MY_FIND_COLLECTOR_EVT               0x0004
-#define MY_TIMER_EVENT                      0x0005
+#define MY_TIMER_EVENT                      0x0008
 
 // ADC definitions for CC2430/CC2530 from the hal_adc.c file
 #if defined (HAL_MCU_CC2530)
