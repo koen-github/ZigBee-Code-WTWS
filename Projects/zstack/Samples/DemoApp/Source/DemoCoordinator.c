@@ -363,19 +363,23 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
-  (void)command;
   (void)len;
 
-  gtwData.parent = BUILD_UINT16(pData[SENSOR_PARENT_OFFSET+1], pData[SENSOR_PARENT_OFFSET]);
-  gtwData.source = source;
-  gtwData.temp = *pData;
-  gtwData.voltage = *(pData+SENSOR_VOLTAGE_OFFSET);
+  if(command == SENSOR_REPORT_CMD_ID || command == DUMMY_REPORT_CMD_ID){
 
-  // Flash LED 2 once to indicate data reception
-  HalLedSet ( HAL_LED_2, HAL_LED_MODE_FLASH );
+    gtwData.parent = BUILD_UINT16(pData[SENSOR_PARENT_OFFSET+1], pData[SENSOR_PARENT_OFFSET]);
+    gtwData.source = source;
+    gtwData.temp = *pData;
+    gtwData.voltage = *(pData+SENSOR_VOLTAGE_OFFSET);
 
-  // Send gateway report
-  sendGtwReport(&gtwData);
+    // Flash LED 2 once to indicate data reception
+    HalLedSet ( HAL_LED_2, HAL_LED_MODE_FLASH );
+
+    // Send gateway report
+    sendGtwReport(&gtwData);
+  } else if(command == LDR_REPORT_CMD_ID){
+  
+  }
 }
 
 /******************************************************************************

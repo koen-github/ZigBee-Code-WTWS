@@ -87,22 +87,29 @@ static uint8 myStartRetryDelay =    10;        // milliseconds
 
 static uint16 parentShortAddr;
 
-static uint8 adcInterval =      100;
+static uint8 adcInterval =      1000;
 static uint8 lightIntensity =   120;
 
 static bool lampOn = false;
+
+static void SendLdrReport(bool status);
 
 /******************************************************************************
  * GLOBAL VARIABLES
  */
 // Inputs and Outputs for Sensor device
-#define NUM_OUT_CMD_SENSOR                1
-#define NUM_IN_CMD_SENSOR                 0
+#define NUM_OUT_CMD_SENSOR                2
+#define NUM_IN_CMD_SENSOR                 1
 
 // List of output and input commands for Sensor device
 const cId_t zb_OutCmdList[NUM_OUT_CMD_SENSOR] =
 {
-  SENSOR_REPORT_CMD_ID
+  SENSOR_REPORT_CMD_ID,
+  LDR_REPORT_CMD_ID
+};
+const cId_t zb_InCmdList[NUM_IN_CMD_SENSOR] =
+{
+  LED_REPORT_CMD_ID
 };
 
 // Define SimpleDescriptor for Sensor device
@@ -114,7 +121,7 @@ const SimpleDescriptionFormat_t zb_SimpleDesc =
   DEVICE_VERSION_SENSOR,      //  Device Version
   0,                          //  Reserved
   NUM_IN_CMD_SENSOR,          //  Number of Input Commands
-  (cId_t *) NULL,             //  Input Command List
+  (cId_t *) zb_InCmdList,     //  Input Command List
   NUM_OUT_CMD_SENSOR,         //  Number of Output Commands
   (cId_t *) zb_OutCmdList     //  Output Command List
 };
@@ -158,12 +165,16 @@ void zb_HandleOsalEvent( uint16 event )
        MCU_IO_SET_LOW(1,2);
        if(lampOn){
         //koen's uit bericht
+         SendLdrReport(false);
        }
     }
   }
   
   if( event & ZB_ENTRY_EVENT )
   {
+    //init uart
+    initUart(uartRxCB);
+    
     // blind LED 1 to indicate joining a network
     HalLedBlink ( HAL_LED_1, 0, 50, 500 );
 
@@ -201,7 +212,8 @@ void zb_HandleOsalEvent( uint16 event )
 
     // Find and bind to a collector device
     appState = APP_BIND;
-    zb_BindDevice( TRUE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
+    //zb_BindDevice( TRUE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
+    zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -258,10 +270,12 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
         if(lux < lightIntensity )
         {
           //koen's uit bericht
+          SendLdrReport(false);
         }
       
       }else{
       //koen's aan bericht
+        SendLdrReport(true);
       }
       
       
@@ -406,7 +420,7 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
-  (void)source;
+  zb_AllowBind(0x00);
 }
 
 /******************************************************************************
@@ -595,4 +609,8 @@ static uint8 readVoltage(void)
   #else
   return 0;
   #endif // CC2530
+}
+
+static void SendLdrReport(bool status){
+
 }
