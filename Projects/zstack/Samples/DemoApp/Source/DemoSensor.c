@@ -94,6 +94,8 @@ static bool lampOn = false;
 
 static void SendLdrReport(bool status);
 
+static uint8 cmdOutIterator =0;
+
 /******************************************************************************
  * GLOBAL VARIABLES
  */
@@ -160,9 +162,9 @@ void zb_HandleOsalEvent( uint16 event )
     uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
     if(lux < lightIntensity )
     {
-       MCU_IO_SET_HIGH(1,2);
+       //MCU_IO_SET_HIGH(1,2);
     }else{
-       MCU_IO_SET_LOW(1,2);
+       //MCU_IO_SET_LOW(1,2);
        if(lampOn){
         //koen's uit bericht
          SendLdrReport(false);
@@ -212,8 +214,8 @@ void zb_HandleOsalEvent( uint16 event )
 
     // Find and bind to a collector device
     appState = APP_BIND;
-    zb_BindDevice( TRUE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
-    zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
+    zb_BindDevice( TRUE, zb_OutCmdList[cmdOutIterator], (uint8 *)NULL );
+    //zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -342,7 +344,14 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
 {
   if( status == ZB_SUCCESS )
   {
-    appState = APP_RUN;
+    
+    if(cmdOutIterator == 1){
+      appState = APP_RUN;
+      zb_AllowBind(0xFF);
+    }else{
+      cmdOutIterator++;
+      osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
+    }
     HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
 
     // After failure reporting start automatically when the device
@@ -437,6 +446,7 @@ void zb_AllowBindConfirm( uint16 source )
  */
 void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
 {
+  
   (void)searchType;
   (void)searchKey;
   (void)result;
@@ -458,6 +468,15 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
+    if(command == LED_REPORT_CMD_ID){
+      if(pData[0]==true){
+        MCU_IO_SET_HIGH(1,2);
+      }else{
+        MCU_IO_SET_LOW(1,2);
+      }
+      
+      
+  }
   (void)source;
   (void)command;
   (void)len;
@@ -612,5 +631,6 @@ static uint8 readVoltage(void)
 }
 
 static void SendLdrReport(bool status){
-  //zb_SendDataRequest( ZB_BINDING_ADDR, LDR_REPORT_CMD_ID, SENSOR_REPORT_LENGTH, pData, 0, txOptions, 0 );
+  uint8 pData[1]= 101;
+  zb_SendDataRequest( ZB_BINDING_ADDR, LDR_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
 }
