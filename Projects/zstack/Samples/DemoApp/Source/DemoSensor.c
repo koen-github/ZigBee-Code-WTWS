@@ -612,5 +612,5 @@ static uint8 readVoltage(void)
 }
 
 static void SendLdrReport(bool status){
-  zb_SendDataRequest( ZB_BINDING_ADDR, LDR_REPORT_CMD_ID, SENSOR_REPORT_LENGTH, pData, 0, txOptions, 0 );
+  //zb_SendDataRequest( ZB_BINDING_ADDR, LDR_REPORT_CMD_ID, SENSOR_REPORT_LENGTH, pData, 0, txOptions, 0 );
 }

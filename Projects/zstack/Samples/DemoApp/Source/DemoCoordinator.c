@@ -316,7 +316,8 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_BindConfirm( uint16 commandId, uint8 status )
 {
-  (void)commandId;
+  if(commandId == LDR_REPORT_CMD_ID){
+  }
   (void)status;
 }
 
