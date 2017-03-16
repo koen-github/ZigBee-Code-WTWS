@@ -112,7 +112,7 @@ static gtwData_t gtwData;
 static bool lampIsActivated = false;
 
 //define toggl lamp
-static void toggleLamp(void);
+static void setLampValue(bool value);
 //define lamp status messag send
 static void sendLampStatusMessage(void);
 
@@ -286,9 +286,15 @@ static void sendLampStatusMessage(void){
 
 }
 
-static void toggleLamp(void){
-   MCU_IO_TGL(0,5);
-   lampIsActivated = !lampIsActivated;
+static void setLampValue(bool value){
+  if(value){
+    MCU_IO_SET_HIGH(0,5); //set lamp HIGH
+    lampIsActivated = true;
+  }
+  else{
+    MCU_IO_SET_LOW(0,5); //set lamp LOW
+    lampIsActivated = false;
+  }
    sendLampStatusMessage();
 }
 
@@ -442,7 +448,7 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
     sendGtwReport(&gtwData);
   } 
   else if(command == LDR_REPORT_CMD_ID){
-    toggleLamp();
+     setLampValue(pData[0]);
   }
 }
 
