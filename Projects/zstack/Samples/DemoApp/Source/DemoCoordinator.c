@@ -113,6 +113,8 @@ static bool lampIsActivated = false;
 
 //define toggl lamp
 static void toggleLamp(void);
+//define lamp status messag send
+static void sendLampStatusMessage(void);
 
 /******************************************************************************
  * LOCAL FUNCTIONS
@@ -264,8 +266,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
-      //start binding with sensor
-   //   zb_GetDeviceInfo(ZB_INFO_PARENT_SHORT_ADDR, &parentShortAddr);
+      appState = APP_BIND;
       osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
     }
     if ( keys & HAL_KEY_SW_3 )
@@ -277,15 +278,21 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
   }
 }
 
+static void sendLampStatusMessage(void){
+     //send back to let the user know the lamp is on.
+   uint8 pData[1];
+   pData[0]= (uint8)lampIsActivated;
+   zb_SendDataRequest( ZB_BINDING_ADDR, LED_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
+
+}
+
 static void toggleLamp(void){
    MCU_IO_TGL(0,5);
    lampIsActivated = !lampIsActivated;
-   //send back to let the user know the lamp is on.
-   uint8 pData[1];
-    pData[0]= (uint8)lampIsActivated;
-    zb_SendDataRequest( ZB_BINDING_ADDR, LED_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
-
+   sendLampStatusMessage();
 }
+
+
 
 /******************************************************************************
  * @fn          zb_StartConfirm
@@ -349,21 +356,16 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
 {
   if( status == ZB_SUCCESS )
   {
-   // appState = APP_RUN;
-    if(commandId == LED_REPORT_CMD_ID){
-      HalLedSet( HAL_LED_2, HAL_LED_MODE_ON );
-    }
-    // After failure reporting start automatically when the device
-    // is bound to a new gateway
- //   if ( reportState )
- //   {
 
-      // Start reporting
-     // osal_start_reload_timer( sapi_TaskID, MY_REPORT_EVT, myReportPeriod );
- //   }
+    if(commandId == LED_REPORT_CMD_ID){
+      HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
+      sendLampStatusMessage(); //send current lamp status.
+      appState = APP_RUN; //finsihed binding.
+    }
   }
   else
   {
+    //todo
   //  if ( ++bindRetries >= 2 ) {
       // Reset the system
  //     zb_SystemReset();
