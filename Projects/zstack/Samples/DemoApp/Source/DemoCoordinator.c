@@ -266,6 +266,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      //when key 2 is pressed, bind back to sensor.
       appState = APP_BIND;
       osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
     }
