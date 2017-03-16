@@ -267,18 +267,20 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
-      static bool lampOn = false;
       if (lampOn){
-        uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
-        if(lux < lightIntensity )
-        {
+        
           //koen's uit bericht
           SendLdrReport(false);
-        }
+
       
       }else{
-      //koen's aan bericht
-        SendLdrReport(true);
+                uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
+
+        if(lux < lightIntensity )
+        {
+          //koen's aan bericht
+          SendLdrReport(true);
+          }
       }
       
       
@@ -471,8 +473,10 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
 {
     if(command == LED_REPORT_CMD_ID){
       if(pData[0]==true){
+        lampOn=true;
         MCU_IO_SET_HIGH(1,2);
       }else{
+        lampOn=false;
         MCU_IO_SET_LOW(1,2);
       }
       
@@ -632,6 +636,7 @@ static uint8 readVoltage(void)
 }
 
 static void SendLdrReport(bool status){
-  uint8 pData[1]= 101;
+  uint8 pData[1];
+  pData[0] = (uint8)status;
   zb_SendDataRequest( ZB_BINDING_ADDR, LDR_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
 }
