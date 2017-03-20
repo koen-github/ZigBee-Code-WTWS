@@ -163,6 +163,8 @@ void zb_HandleOsalEvent( uint16 event )
     uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
     if(lux < lightIntensity )
     {
+      //NOT SURE IF THIS IS ACCORDING TO THE ASSIGNMENT??
+      SendLdrReport(true);
        //MCU_IO_SET_HIGH(1,2);
     }else{
        //MCU_IO_SET_LOW(1,2);
