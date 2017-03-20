@@ -233,8 +233,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
-      doorIsOpen = !doorIsOpen;
-      openDoorOnCoordinator(doorIsOpen);
+      openDoorOnCoordinator(!doorIsOpen);
     }
     if ( keys & HAL_KEY_SW_3 )
     {
@@ -255,9 +254,11 @@ void openDoorOnCoordinator(bool openDoor) {
 
 void setDoorStatusLed(bool doorIsOpened ){
   if(doorIsOpened){
+    doorIsOpen = true;
     MCU_IO_SET_HIGH(1,2);
   }
   else{
+    doorIsOpen = false;
     MCU_IO_SET_LOW(1,2);
   }
   
@@ -429,13 +430,9 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
-  if(command == KEYLOCK_CMD_ID){
-    if(pData[0]){
-     setDoorStatusLed(false); 
-    }
-    else{
-      setDoorStatusLed(true); 
-    }
+  if(command == DOOR_STATUS_CMD_ID){
+     setDoorStatusLed(pData[0]); 
+    
   }
 }
 

@@ -305,7 +305,7 @@ void zb_StartConfirm( uint8 status )
     osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
 
     // Turn OFF Allow Bind mode infinitly
-    zb_AllowBind( 0x00 );
+    zb_AllowBind( 0xFF );
     HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
   }
   else
@@ -419,7 +419,7 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
-  zb_AllowBind(0x00);
+  //zb_AllowBind(0x00);
 }
 
 /******************************************************************************

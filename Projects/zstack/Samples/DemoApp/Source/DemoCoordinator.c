@@ -90,6 +90,7 @@
 // Application osal event identifiers
 #define MY_START_EVT                        0x0001
 #define MY_FIND_COLLECTOR_EVT               0x0002
+#define MY_DOOR_STATUS_EVT                  0x0004
 
 
 /******************************************************************************
@@ -108,14 +109,19 @@ typedef struct
  */
 static uint8 appState =             APP_INIT;
 static uint8 myStartRetryDelay =    10;          // milliseconds
-static gtwData_t gtwData;
+
 static bool lampIsActivated = false;
+static uint8 pollingDoorStatusInterval =      1000;
+bool isDoorCurrentlyOpen = false; 
 
 //define toggl lamp
 static void setLampValue(bool value);
 //define lamp status messag send
 static void sendLampStatusMessage(void);
+static void sendCurrentDoorStatus(void);
+
 static void openDoor(bool openDoor);
+
 
 /******************************************************************************
  * LOCAL FUNCTIONS
@@ -195,7 +201,29 @@ void zb_HandleOsalEvent( uint16 event )
     MCU_IO_DIR_OUTPUT(0,5); //set Lamp value.
     MCU_IO_DIR_OUTPUT(0,6); //set Door value
     MCU_IO_SET_HIGH(0,5); //set lamp on default
+    
+    MCU_IO_INPUT(0,4,MCU_IO_PULLUP); 
+    isDoorCurrentlyOpen = MCU_IO_GET(0,4);
+      
+    osal_start_timerEx(osal_self(),MY_DOOR_STATUS_EVT,pollingDoorStatusInterval);
+    
+    
     lampIsActivated = true;
+  }
+  
+  if(event & MY_DOOR_STATUS_EVT){
+    osal_start_reload_timer(osal_self(),MY_DOOR_STATUS_EVT,pollingDoorStatusInterval);
+    if(MCU_IO_GET(0,4) != isDoorCurrentlyOpen)
+    {
+     if(MCU_IO_GET(0,4)){
+        isDoorCurrentlyOpen = MCU_IO_GET(0,4);
+      }
+      else{
+        isDoorCurrentlyOpen = MCU_IO_GET(0,4);
+      }
+    
+      sendCurrentDoorStatus();
+    }
   }
 
   if ( event & MY_START_EVT )
@@ -208,7 +236,7 @@ void zb_HandleOsalEvent( uint16 event )
     HalLedBlink ( HAL_LED_2, 0, 50, 200 );
 
     // Find and bind to a collector device
-    zb_BindDevice( TRUE, LED_REPORT_CMD_ID, (uint8 *)NULL );
+    zb_BindDevice( TRUE, DOOR_STATUS_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -288,6 +316,12 @@ static void sendLampStatusMessage(void){
    pData[0]= (uint8)lampIsActivated;
    zb_SendDataRequest( ZB_BINDING_ADDR, LED_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
 
+}
+
+static void sendCurrentDoorStatus(void){
+  uint8 pData[1];
+  pData[0]= (bool)isDoorCurrentlyOpen;
+  zb_SendDataRequest( ZB_BINDING_ADDR, DOOR_STATUS_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
 }
 
 static void setLampValue(bool value){
@@ -381,6 +415,11 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
       sendLampStatusMessage(); //send current lamp status.
       appState = APP_RUN; //finsihed binding.
     }
+     else if(commandId == DOOR_STATUS_CMD_ID){
+      HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
+      sendCurrentDoorStatus(); //send current door status.
+      appState = APP_RUN; //finsihed binding.
+    }
   }
   else
   {
@@ -408,15 +447,18 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
 void zb_AllowBindConfirm( uint16 source )
 {
   static bool lampisBinded=false;
+
+  if(!lampisBinded){ //first bootup the router
+  //connect door
+    //DO NOT BIND WITH SOURCE, BUT WITH NULL!!!
+  zb_BindDevice(true,DOOR_STATUS_CMD_ID,(uint8 *)NULL);
   
-  if(!lampisBinded){
-  //connect lamp
-  zb_BindDevice(true,LED_REPORT_CMD_ID,source);
   lampisBinded=true;
   }
   else{
-  //connect door
-  zb_BindDevice(true,DOOR_STATUS_CMD_ID,source);
+  //connect lamp
+    //DO NOT BIND WITH SOURCE, BUT WITH NULL!!!
+  zb_BindDevice(true,LED_REPORT_CMD_ID,(uint8 *)NULL);
   }
     
   (void)source;
@@ -457,30 +499,11 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
-  /*
-  (void)len;
-
-  if(command == SENSOR_REPORT_CMD_ID || command == DUMMY_REPORT_CMD_ID){
-
-    gtwData.parent = BUILD_UINT16(pData[SENSOR_PARENT_OFFSET+1], pData[SENSOR_PARENT_OFFSET]);
-    gtwData.source = source;
-    gtwData.temp = *pData;
-    gtwData.voltage = *(pData+SENSOR_VOLTAGE_OFFSET);
-
-    // Flash LED 2 once to indicate data reception
-    HalLedSet ( HAL_LED_2, HAL_LED_MODE_FLASH );
-
-    // Send gateway report
-    sendGtwReport(&gtwData);
-  } 
-  
-  */
-  
   if(command == LDR_REPORT_CMD_ID){
      setLampValue(pData[0]);
   }
   else if(command == KEYLOCK_CMD_ID){
-      openDoor(pData[0]);
+     openDoor(pData[0]);
   }
   
   
@@ -568,54 +591,6 @@ static void sysPingRsp(void)
   // Write frame to UART
   HalUARTWrite(HAL_UART_PORT_0,pBuf, SYS_PING_RSP_LENGTH);
 }
-
-/******************************************************************************
- * @fn          sendGtwReport
- *
- * @brief       Build and send gateway report
- *
- * @param       none
- *
- * @return      none
- */
-/*static void sendGtwReport(gtwData_t *gtwData)
-{
-  uint8 pFrame[ZB_RECV_LENGTH];
-
-  // Start of Frame Delimiter
-  pFrame[FRAME_SOF_OFFSET] = CPT_SOP; // Start of Frame Delimiter
-
-  // Length
-  pFrame[FRAME_LENGTH_OFFSET] = 10;
-
-  // Command type
-  pFrame[FRAME_CMD0_OFFSET] = LO_UINT16(ZB_RECEIVE_DATA_INDICATION);
-  pFrame[FRAME_CMD1_OFFSET] = HI_UINT16(ZB_RECEIVE_DATA_INDICATION);
-
-  // Source address
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_SRC_OFFSET] = LO_UINT16(gtwData->source);
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_SRC_OFFSET+ 1] = HI_UINT16(gtwData->source);
-
-  // Command ID
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_CMD_OFFSET] = LO_UINT16(SENSOR_REPORT_CMD_ID);
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_CMD_OFFSET+ 1] = HI_UINT16(SENSOR_REPORT_CMD_ID);
-
-  // Length
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_LEN_OFFSET] = LO_UINT16(4);
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_LEN_OFFSET+ 1] = HI_UINT16(4);
-
-  // Data
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_DATA_OFFSET] = gtwData->temp;
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_DATA_OFFSET+ 1] = gtwData->voltage;
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_DATA_OFFSET+ 2] = LO_UINT16(gtwData->parent);
-  pFrame[FRAME_DATA_OFFSET + ZB_RECV_DATA_OFFSET+ 3] = HI_UINT16(gtwData->parent);
-
-  // Frame Check Sequence
-  pFrame[ZB_RECV_LENGTH - 1] = calcFCS(&pFrame[FRAME_LENGTH_OFFSET], (ZB_RECV_LENGTH - 2) );
-
-  // Write report to UART
-  HalUARTWrite(HAL_UART_PORT_0,pFrame, ZB_RECV_LENGTH);
-}*/
 
 /******************************************************************************
  * @fn          calcFCS
