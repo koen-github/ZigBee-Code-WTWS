@@ -328,41 +328,7 @@ void zb_StartConfirm( uint8 status )
  */
 void zb_BindConfirm( uint16 commandId, uint8 status )
 {
-  /*
-  if( status == ZB_SUCCESS )
-  {
-    
-    if(cmdOutIterator == 1){
-      appState = APP_RUN;
-      zb_AllowBind(0xFF);
-    }else{
-      cmdOutIterator++;
-      osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
-    }
-    HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
 
-    // After failure reporting start automatically when the device
-    // is bound to a new gateway
-    if ( reportState )
-    {
-      // blink LED 2 to indicate reporting
-      HalLedBlink ( HAL_LED_2, 0, 50, 500 );
-
-      // Start reporting
-      osal_start_reload_timer( sapi_TaskID, MY_REPORT_EVT, myReportPeriod );
-    }
-  }
-  else
-  {
-    if ( ++bindRetries >= 2 ) {
-      // Reset the system
-      zb_SystemReset();
-    }
-    else
-    {
-      osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
-    }
-  }*/
 }
 
 /******************************************************************************
@@ -378,34 +344,7 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
  */
 void zb_SendDataConfirm( uint8 handle, uint8 status )
 {
-  /*
-  if(status != ZB_SUCCESS)
-  {
-    
-    if ( ++reportFailureNr >= REPORT_FAILURE_LIMIT )
-    {
-       // Stop reporting
-       osal_stop_timerEx( sapi_TaskID, MY_REPORT_EVT );
 
-       // After failure start reporting automatically when the device
-       // is binded to a new gateway
-       reportState = TRUE;
-
-       // Delete previous binding
-       zb_BindDevice( FALSE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
-
-       // Try binding to a new gateway
-       osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
-       reportFailureNr = 0;
-    }
-  }
-  // status == SUCCESS
-  else
-  {
-    // Reset failure counter
-    reportFailureNr = 0;
-  }
-    */
 }
 
 /******************************************************************************
@@ -419,7 +358,7 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
-  //zb_AllowBind(0x00);
+  zb_AllowBind(0x00);
 }
 
 /******************************************************************************
@@ -495,96 +434,6 @@ void uartRxCB( uint8 port, uint8 event )
   (void)event;
 }
 
-/******************************************************************************
- * @fn          readTemp
- *
- * @brief       read temperature from ADC
- *
- * @param       none
- *
- * @return      temperature
- */
-static int8 readTemp(void)
-{
-  static uint16 voltageAtTemp22;
-  static uint8 bCalibrate = TRUE; // Calibrate the first time the temp sensor is read
-  uint16 value;
-  int8 temp;
-
-  #if defined (HAL_MCU_CC2530)
-  /*
-   * Use the ADC to read the temperature
-   */
-  value = HalReadTemp();
-
-  // Use the 12 MSB of adcValue
-  value >>= 4;
-
-  /*
-   * These parameters are typical values and need to be calibrated
-   * See the datasheet for the appropriate chip for more details
-   * also, the math below may not be very accurate
-   */
-  /* Assume ADC = 1480 at 25C and ADC = 4/C */
-  #define VOLTAGE_AT_TEMP_25        1480
-  #define TEMP_COEFFICIENT          4
-
-  // Calibrate for 22C the first time the temp sensor is read.
-  // This will assume that the demo is started up in temperature of 22C
-  if ( bCalibrate ) {
-    voltageAtTemp22 = value;
-    bCalibrate = FALSE;
-  }
-
-  temp = 22 + ( (value - voltageAtTemp22) / TEMP_COEFFICIENT );
-
-  // Set 0C as minimum temperature, and 100C as max
-  if ( temp >= 100 )
-  {
-    return 100;
-  }
-  else if ( temp <= 0 ) {
-    return 0;
-  }
-  else {
-    return temp;
-  }
-  // Only CC2530 is supported
-  #else
-  return 0;
-  #endif
-}
-
-/******************************************************************************
- * @fn          readVoltage
- *
- * @brief       read voltage from ADC
- *
- * @param       none
- *
- * @return      voltage
- */
-static uint8 readVoltage(void)
-{
-  #if defined (HAL_MCU_CC2530)
-  /*
-   * Use the ADC to read the bus voltage
-   */
-  uint16 value = HalReadTemp();
-
-  // value now contains measurement of Vdd/3
-  // 0 indicates 0V and 32767 indicates 1.25V
-  // voltage = (value*3*1.25)/32767 volts
-  // we will multiply by this by 10 to allow units of 0.1 volts
-  value = value >> 6;   // divide first by 2^6
-  value = (uint16)(value * 37.5);
-  value = value >> 9;   // ...and later by 2^9...to prevent overflow during multiplication
-
-  return value;
-  #else
-  return 0;
-  #endif // CC2530
-}
 
 static void SendLdrReport(bool status){
   uint8 pData[1];
