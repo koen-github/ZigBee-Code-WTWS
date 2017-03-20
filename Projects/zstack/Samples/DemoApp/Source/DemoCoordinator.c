@@ -407,6 +407,18 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
+  static bool lampisBinded=false;
+  
+  if(!lampisBinded){
+  //connect lamp
+  zb_BindDevice(true,LED_REPORT_CMD_ID,source);
+  lampisBinded=true;
+  }
+  else{
+  //connect door
+  zb_BindDevice(true,DOOR_STATUS_CMD_ID,source);
+  }
+    
   (void)source;
 }
 
