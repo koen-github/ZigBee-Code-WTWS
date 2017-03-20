@@ -122,14 +122,14 @@ static void sendLampStatusMessage(void);
 static uint8 calcFCS(uint8 *pBuf, uint8 len);
 static void sysPingReqRcvd(void);
 static void sysPingRsp(void);
-static void sendGtwReport(gtwData_t *gtwData);
+//static void sendGtwReport(gtwData_t *gtwData);
 
 /******************************************************************************
  * GLOBAL VARIABLES
  */
 // Inputs and Outputs for Collector device
 #define NUM_OUT_CMD_COLLECTOR           1
-#define NUM_IN_CMD_COLLECTOR            2
+#define NUM_IN_CMD_COLLECTOR            1
 
 // List of output and input commands for Collector device
 const cId_t zb_OutCmdList[NUM_OUT_CMD_COLLECTOR] =
@@ -138,7 +138,6 @@ const cId_t zb_OutCmdList[NUM_OUT_CMD_COLLECTOR] =
 };
 const cId_t zb_InCmdList[NUM_IN_CMD_COLLECTOR] =
 {
-  SENSOR_REPORT_CMD_ID,
   LDR_REPORT_CMD_ID
 };
 
@@ -433,6 +432,7 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
+  /*
   (void)len;
 
   if(command == SENSOR_REPORT_CMD_ID || command == DUMMY_REPORT_CMD_ID){
@@ -451,6 +451,7 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
   else if(command == LDR_REPORT_CMD_ID){
      setLampValue(pData[0]);
   }
+  */
 }
 
 /******************************************************************************
@@ -545,7 +546,7 @@ static void sysPingRsp(void)
  *
  * @return      none
  */
-static void sendGtwReport(gtwData_t *gtwData)
+/*static void sendGtwReport(gtwData_t *gtwData)
 {
   uint8 pFrame[ZB_RECV_LENGTH];
 
@@ -582,7 +583,7 @@ static void sendGtwReport(gtwData_t *gtwData)
 
   // Write report to UART
   HalUARTWrite(HAL_UART_PORT_0,pFrame, ZB_RECV_LENGTH);
-}
+}*/
 
 /******************************************************************************
  * @fn          calcFCS

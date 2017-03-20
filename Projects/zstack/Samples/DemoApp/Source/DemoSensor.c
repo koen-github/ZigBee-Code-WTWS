@@ -101,18 +101,18 @@ static uint8 cmdOutIterator =0;
  * GLOBAL VARIABLES
  */
 // Inputs and Outputs for Sensor device
-#define NUM_OUT_CMD_SENSOR                2
-#define NUM_IN_CMD_SENSOR                 1
+#define NUM_OUT_CMD_SENSOR                1
+#define NUM_IN_CMD_SENSOR                 2
 
 // List of output and input commands for Sensor device
 const cId_t zb_OutCmdList[NUM_OUT_CMD_SENSOR] =
 {
-  SENSOR_REPORT_CMD_ID,
   LDR_REPORT_CMD_ID
 };
 const cId_t zb_InCmdList[NUM_IN_CMD_SENSOR] =
 {
-  LED_REPORT_CMD_ID
+  LED_REPORT_CMD_ID,
+  DOOR_STATUS_CMD_ID
 };
 
 // Define SimpleDescriptor for Sensor device
@@ -199,15 +199,6 @@ void zb_HandleOsalEvent( uint16 event )
     zb_StartRequest();
   }
 
-  if ( event & MY_REPORT_EVT )
-  {
-
-    if ( appState == APP_RUN )
-    {
-      sendReport();
-    }
-  }
-
   if ( event & MY_FIND_COLLECTOR_EVT )
   {
     // blink LED 2 to indicate discovery and binding
@@ -215,8 +206,7 @@ void zb_HandleOsalEvent( uint16 event )
 
     // Find and bind to a collector device
     appState = APP_BIND;
-    zb_BindDevice( TRUE, zb_OutCmdList[cmdOutIterator], (uint8 *)NULL );
-    //zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
+    zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -256,14 +246,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
   {
     if ( keys & HAL_KEY_SW_1 )
     {
-      // Start reporting
-      if ( reportState == FALSE ) {
-        osal_start_reload_timer( sapi_TaskID, MY_REPORT_EVT, myReportPeriod );
-        reportState = TRUE;
 
-        // blink LED 2 to indicate reporting
-        HalLedBlink ( HAL_LED_2, 0, 50, 500 );
-      }
     }
     if ( keys & HAL_KEY_SW_2 )
     {
@@ -345,6 +328,7 @@ void zb_StartConfirm( uint8 status )
  */
 void zb_BindConfirm( uint16 commandId, uint8 status )
 {
+  /*
   if( status == ZB_SUCCESS )
   {
     
@@ -378,7 +362,7 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
     {
       osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
     }
-  }
+  }*/
 }
 
 /******************************************************************************
@@ -394,8 +378,10 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
  */
 void zb_SendDataConfirm( uint8 handle, uint8 status )
 {
+  /*
   if(status != ZB_SUCCESS)
   {
+    
     if ( ++reportFailureNr >= REPORT_FAILURE_LIMIT )
     {
        // Stop reporting
@@ -419,6 +405,7 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
     // Reset failure counter
     reportFailureNr = 0;
   }
+    */
 }
 
 /******************************************************************************
@@ -481,7 +468,9 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
       }
       
       
-  }
+    }else if(command == DOOR_STATUS_CMD_ID){
+    
+    }
   (void)source;
   (void)command;
   (void)len;
@@ -502,46 +491,6 @@ void uartRxCB( uint8 port, uint8 event )
 {
   (void)port;
   (void)event;
-}
-
-/******************************************************************************
- * @fn          sendReport
- *
- * @brief       Send sensor report
- *
- * @param       none
- *
- * @return      none
- */
-static void sendReport(void)
-{
-  uint8 pData[SENSOR_REPORT_LENGTH];
-  static uint8 reportNr = 0;
-  uint8 txOptions;
-
-  // Read and report temperature value
-  pData[SENSOR_TEMP_OFFSET] = readTemp();
-
-  // Read and report voltage value
-  pData[SENSOR_VOLTAGE_OFFSET] = readVoltage();
-
-  pData[SENSOR_PARENT_OFFSET] =  HI_UINT16(parentShortAddr);
-  pData[SENSOR_PARENT_OFFSET + 1] =  LO_UINT16(parentShortAddr);
-
-  // Set ACK request on each ACK_INTERVAL report
-  // If a report failed, set ACK request on next report
-  if ( ++reportNr<ACK_REQ_INTERVAL && reportFailureNr == 0 )
-  {
-    txOptions = AF_TX_OPTIONS_NONE;
-  }
-  else
-  {
-    txOptions = AF_MSG_ACK_REQUEST;
-    reportNr = 0;
-  }
-  // Destination address is set to previously established binding
-  // for the commandId.
-  zb_SendDataRequest( ZB_BINDING_ADDR, SENSOR_REPORT_CMD_ID, SENSOR_REPORT_LENGTH, pData, 0, txOptions, 0 );
 }
 
 /******************************************************************************
