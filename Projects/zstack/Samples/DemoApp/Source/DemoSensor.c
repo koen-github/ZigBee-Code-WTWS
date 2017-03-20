@@ -466,10 +466,12 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
         lampOn=false;
         MCU_IO_SET_LOW(1,2);
       }
-      
+            
       
     }else if(command == DOOR_STATUS_CMD_ID){
-    
+      if(!lampOn && (HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8) >= lightIntensity )){
+        SendLdrReport(true);
+      }
     }
   (void)source;
   (void)command;
