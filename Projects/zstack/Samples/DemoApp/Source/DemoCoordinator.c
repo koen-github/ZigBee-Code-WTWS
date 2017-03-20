@@ -115,6 +115,7 @@ static bool lampIsActivated = false;
 static void setLampValue(bool value);
 //define lamp status messag send
 static void sendLampStatusMessage(void);
+static void openDoor(bool openDoor);
 
 /******************************************************************************
  * LOCAL FUNCTIONS
@@ -128,17 +129,19 @@ static void sysPingRsp(void);
  * GLOBAL VARIABLES
  */
 // Inputs and Outputs for Collector device
-#define NUM_OUT_CMD_COLLECTOR           1
-#define NUM_IN_CMD_COLLECTOR            1
+#define NUM_OUT_CMD_COLLECTOR           2
+#define NUM_IN_CMD_COLLECTOR            2
 
 // List of output and input commands for Collector device
 const cId_t zb_OutCmdList[NUM_OUT_CMD_COLLECTOR] =
 {
   LED_REPORT_CMD_ID,
+  DOOR_STATUS_CMD_ID
 };
 const cId_t zb_InCmdList[NUM_IN_CMD_COLLECTOR] =
 {
-  LDR_REPORT_CMD_ID
+  LDR_REPORT_CMD_ID,
+  KEYLOCK_CMD_ID
 };
 
 
@@ -189,7 +192,8 @@ void zb_HandleOsalEvent( uint16 event )
     appState = APP_START;
     zb_StartRequest();
     
-    MCU_IO_DIR_OUTPUT(0,5); //set 
+    MCU_IO_DIR_OUTPUT(0,5); //set Lamp value.
+    MCU_IO_DIR_OUTPUT(0,6); //set Door value
     MCU_IO_SET_HIGH(0,5); //set lamp on default
     lampIsActivated = true;
   }
@@ -296,6 +300,15 @@ static void setLampValue(bool value){
     lampIsActivated = false;
   }
    sendLampStatusMessage();
+}
+
+static void openDoor(bool openDoor){
+  if(openDoor){
+    MCU_IO_SET_HIGH(0,6);
+  }
+  else{
+    MCU_IO_SET_LOW(0,6);
+  }
 }
 
 
@@ -448,10 +461,17 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
     // Send gateway report
     sendGtwReport(&gtwData);
   } 
-  else if(command == LDR_REPORT_CMD_ID){
+  
+  */
+  
+  if(command == LDR_REPORT_CMD_ID){
      setLampValue(pData[0]);
   }
-  */
+  else if(command == KEYLOCK_CMD_ID){
+      openDoor(pData[0]);
+  }
+  
+  
 }
 
 /******************************************************************************

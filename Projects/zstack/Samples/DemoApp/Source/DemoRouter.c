@@ -91,12 +91,17 @@ static uint16 parentShortAddr;
  */
 // Inputs and Outputs for Sensor device
 #define NUM_OUT_CMD_SENSOR        1
-#define NUM_IN_CMD_SENSOR         0
+#define NUM_IN_CMD_SENSOR         1
 
 // List of output and input commands for Sensor device
 const cId_t zb_OutCmdList[NUM_OUT_CMD_SENSOR] =
 {
-  SENSOR_REPORT_CMD_ID
+  KEYLOCK_CMD_ID
+};
+
+const cId_t zb_InCmdList[NUM_IN_CMD_COLLECTOR] =
+{
+  DOOR_STATUS_CMD_ID
 };
 
 // Define SimpleDescriptor for Sensor device
@@ -108,7 +113,7 @@ const SimpleDescriptionFormat_t zb_SimpleDesc =
   DEVICE_VERSION_SENSOR,      //  Device Version
   0,                          //  Reserved
   NUM_IN_CMD_SENSOR,          //  Number of Input Commands
-  (cId_t *) NULL,             //  Input Command List
+  (cId_t *) zb_InCmdList,              //  Input Command List
   NUM_OUT_CMD_SENSOR,         //  Number of Output Commands
   (cId_t *) zb_OutCmdList     //  Output Command List
 };
@@ -120,6 +125,12 @@ void uartRxCB( uint8 port, uint8 event );
 static void sendReport(void);
 static int8 readTemp(void);
 static uint8 readVoltage(void);
+
+static void openDoorOnCoordinator(bool openDoor); 
+static void setDoorStatusLed(bool doorIsOpened );
+
+
+static bool doorIsOpen = false;
 
 /******************************************************************************
  * GLOBAL FUNCTIONS
@@ -149,6 +160,8 @@ void zb_HandleOsalEvent( uint16 event )
     // Start the device
     appState = APP_START;
     zb_StartRequest();
+    
+     MCU_IO_DIR_OUTPUT(1,2); //set output led
   }
 
   if ( event & MY_START_EVT )
@@ -160,7 +173,8 @@ void zb_HandleOsalEvent( uint16 event )
   {
     if ( appState == APP_RUN )
     {
-      sendReport();
+      //sendReport();
+      //not sending any reports.
     }
   }
 
@@ -171,7 +185,7 @@ void zb_HandleOsalEvent( uint16 event )
 
     // Find and bind to a collector device
     appState = APP_BIND;
-    zb_BindDevice( TRUE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
+    zb_BindDevice( TRUE, KEYLOCK_CMD_ID, (uint8 *)NULL );
   }
 }
 
@@ -222,6 +236,8 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      doorIsOpen = !doorIsOpen;
+      openDoorOnCoordinator(doorIsOpen);
     }
     if ( keys & HAL_KEY_SW_3 )
     {
@@ -230,6 +246,24 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     {
     }
   }
+}
+
+//true to open the door, false to close it.
+void openDoorOnCoordinator(bool openDoor) {
+  uint8 pData[1];
+  pData[0]= (uint8)openDoor;
+  zb_SendDataRequest( ZB_BINDING_ADDR, KEYLOCK_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
+}
+
+
+void setDoorStatusLed(bool doorIsOpened ){
+  if(doorIsOpened){
+    MCU_IO_SET_HIGH(1,2);
+  }
+  else{
+    MCU_IO_SET_LOW(1,2);
+  }
+  
 }
 
 /******************************************************************************
@@ -335,9 +369,6 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
        // is binded to a new gateway
        reportState = TRUE;
 
-       // Delete previous binding
-       zb_BindDevice( FALSE, SENSOR_REPORT_CMD_ID, (uint8 *)NULL );
-
       // Try to bind a new gateway
        osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
        reportFailureNr = 0;
@@ -400,10 +431,14 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
-  (void)source;
-  (void)command;
-  (void)len;
-  (void)pData;
+  if(command == KEYLOCK_CMD_ID){
+    if(pData[0]){
+     setDoorStatusLed(false); 
+    }
+    else{
+      setDoorStatusLed(true); 
+    }
+  }
 }
 
 /******************************************************************************
