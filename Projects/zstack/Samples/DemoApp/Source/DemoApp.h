@@ -85,6 +85,7 @@
 #define APP_BIND                            2    // Node is in process of binding
 #define APP_RUN                             4    // Node is in running state
 
+
 /******************************************************************************
  * PUBLIC FUNCTIONS
  */

@@ -164,7 +164,7 @@ void zb_HandleOsalEvent( uint16 event )
     if(lux < lightIntensity )
     {
       //NOT SURE IF THIS IS ACCORDING TO THE ASSIGNMENT??
-      SendLdrReport(true);
+      //SendLdrReport(true);
        //MCU_IO_SET_HIGH(1,2);
     }else{
        //MCU_IO_SET_LOW(1,2);
@@ -360,7 +360,14 @@ void zb_SendDataConfirm( uint8 handle, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
-  zb_AllowBind(0x00);
+  static int it=0;
+  if(it){
+    zb_AllowBind(0x00);
+    HalLedSet(HAL_LED_2,HAL_LED_MODE_ON);
+    
+  }
+  it++;
+  //zb_AllowBind(0x00);
 }
 
 /******************************************************************************
@@ -410,7 +417,7 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
             
       
     }else if(command == DOOR_STATUS_CMD_ID){
-      if(!lampOn && (HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8) >= lightIntensity )){
+      if(!lampOn && (HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8) <= lightIntensity )){
         SendLdrReport(true);
       }
     }

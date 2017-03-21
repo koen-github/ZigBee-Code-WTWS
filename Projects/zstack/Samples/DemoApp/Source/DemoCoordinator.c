@@ -297,9 +297,10 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      zb_BindDevice(true,DOOR_STATUS_CMD_ID,(uint8 *)NULL);
       //when key 2 is pressed, bind back to sensor.
-      appState = APP_BIND;
-      osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
+      //appState = APP_BIND;
+      //osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
     }
     if ( keys & HAL_KEY_SW_3 )
     {
