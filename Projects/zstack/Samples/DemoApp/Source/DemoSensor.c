@@ -76,26 +76,13 @@
 /******************************************************************************
  * LOCAL VARIABLES
  */
-static uint8 appState =           APP_INIT;
-static uint8 reportState =        FALSE;
-
-static uint8 reportFailureNr =    0;
-static uint8 bindRetries =        0;
-
-static uint16 myReportPeriod =    5000;        // milliseconds
-static uint16 myBindRetryDelay =  2000;        // milliseconds
-static uint8 myStartRetryDelay =    10;        // milliseconds
-
-static uint16 parentShortAddr;
-
 static uint8 adcInterval =      1000;
 static uint8 lightIntensity =   120;
 
 static bool lampOn = false;
 
 static void SendLdrReport(bool status);
-
-static uint8 cmdOutIterator =0;
+static uint8 myStartRetryDelay =    10;
 
 /******************************************************************************
  * GLOBAL VARIABLES
@@ -133,9 +120,6 @@ const SimpleDescriptionFormat_t zb_SimpleDesc =
  * LOCAL FUNCTIONS
  */
 void uartRxCB( uint8 port, uint8 event );
-static void sendReport(void);
-static int8 readTemp(void);
-static uint8 readVoltage(void);
 
 /******************************************************************************
  * GLOBAL FUNCTIONS
@@ -163,11 +147,8 @@ void zb_HandleOsalEvent( uint16 event )
     uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
     if(lux < lightIntensity )
     {
-      //NOT SURE IF THIS IS ACCORDING TO THE ASSIGNMENT??
-      //SendLdrReport(true);
-       //MCU_IO_SET_HIGH(1,2);
+      //do nothing
     }else{
-       //MCU_IO_SET_LOW(1,2);
        if(lampOn){
         //koen's uit bericht
          SendLdrReport(false);
@@ -191,8 +172,6 @@ void zb_HandleOsalEvent( uint16 event )
      MCU_IO_OUTPUT(0,5,1);
      MCU_IO_OUTPUT(0,0,0);
     
-    // Start the device
-    appState = APP_START;
     zb_StartRequest();
   }
 
@@ -203,11 +182,8 @@ void zb_HandleOsalEvent( uint16 event )
 
   if ( event & MY_FIND_COLLECTOR_EVT )
   {
-    // blink LED 2 to indicate discovery and binding
+    // blink LED 2 to indicate 
     HalLedBlink ( HAL_LED_2, 0, 50, 500 );
-
-    // Find and bind to a collector device
-    appState = APP_BIND;
     zb_BindDevice( TRUE, LDR_REPORT_CMD_ID, (uint8 *)NULL );
   }
 }
@@ -253,23 +229,18 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     if ( keys & HAL_KEY_SW_2 )
     {
       if (lampOn){
-        
           //koen's uit bericht
           SendLdrReport(false);
+      }
+      else{
+          uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
 
-      
-      }else{
-                uint8 lux = HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8);
-
-        if(lux < lightIntensity )
-        {
-          //koen's aan bericht
-          SendLdrReport(true);
+          if(lux < lightIntensity )
+          {
+             //koen's aan bericht
+             SendLdrReport(true);
           }
       }
-      
-      
-      
     }
     if ( keys & HAL_KEY_SW_3 )
     {
@@ -300,8 +271,6 @@ void zb_StartConfirm( uint8 status )
     // Set LED 1 to indicate that node is operational on the network
     HalLedSet( HAL_LED_1, HAL_LED_MODE_ON );
 
-    // Store parent short address
-    zb_GetDeviceInfo(ZB_INFO_PARENT_SHORT_ADDR, &parentShortAddr);
 
     // Set event to bind to a collector
     osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
@@ -330,7 +299,6 @@ void zb_StartConfirm( uint8 status )
  */
 void zb_BindConfirm( uint16 commandId, uint8 status )
 {
-
 }
 
 /******************************************************************************
@@ -346,7 +314,6 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
  */
 void zb_SendDataConfirm( uint8 handle, uint8 status )
 {
-
 }
 
 /******************************************************************************
@@ -364,10 +331,9 @@ void zb_AllowBindConfirm( uint16 source )
   if(it){
     zb_AllowBind(0x00);
     HalLedSet(HAL_LED_2,HAL_LED_MODE_ON);
-    
+ 
   }
   it++;
-  //zb_AllowBind(0x00);
 }
 
 /******************************************************************************
@@ -406,25 +372,24 @@ void zb_FindDeviceConfirm( uint8 searchType, uint8 *searchKey, uint8 *result )
  */
 void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 *pData  )
 {
+  (void)source;
+  (void)len;
+  
     if(command == LED_REPORT_CMD_ID){
       if(pData[0]==true){
         lampOn=true;
         MCU_IO_SET_HIGH(1,2);
-      }else{
+      }
+      else{
         lampOn=false;
         MCU_IO_SET_LOW(1,2);
       }
-            
-      
-    }else if(command == DOOR_STATUS_CMD_ID){
+    }
+    else if(command == DOOR_STATUS_CMD_ID){
       if(!lampOn && (HalAdcRead(HAL_ADC_CHN_AIN4,HAL_ADC_RESOLUTION_8) <= lightIntensity )){
         SendLdrReport(true);
       }
     }
-  (void)source;
-  (void)command;
-  (void)len;
-  (void)pData;
 }
 
 /******************************************************************************

@@ -158,21 +158,12 @@ void zb_HandleOsalEvent( uint16 event )
     appState = APP_START;
     zb_StartRequest();
     
-     MCU_IO_DIR_OUTPUT(1,2); //set output led
+    MCU_IO_DIR_OUTPUT(1,2); //set output led
   }
 
   if ( event & MY_START_EVT )
   {
     zb_StartRequest();
-  }
-
-  if ( event & MY_REPORT_EVT )
-  {
-    if ( appState == APP_RUN )
-    {
-      //sendReport();
-      //not sending any reports.
-    }
   }
 
   if ( event & MY_FIND_COLLECTOR_EVT )
@@ -222,14 +213,6 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
   {
     if ( keys & HAL_KEY_SW_1 )
     {
-      // Start reporting
-      if ( reportState == FALSE ) {
-        osal_start_reload_timer( sapi_TaskID, MY_REPORT_EVT, myReportPeriod );
-        reportState = TRUE;
-
-        // switch LED 2 on to indicate reporting
-        HalLedSet( HAL_LED_2, HAL_LED_MODE_ON );
-      }
     }
     if ( keys & HAL_KEY_SW_2 )
     {
@@ -432,7 +415,6 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
 {
   if(command == DOOR_STATUS_CMD_ID){
      setDoorStatusLed(pData[0]); 
-    
   }
 }
 

@@ -129,7 +129,7 @@ static void openDoor(bool openDoor);
 static uint8 calcFCS(uint8 *pBuf, uint8 len);
 static void sysPingReqRcvd(void);
 static void sysPingRsp(void);
-//static void sendGtwReport(gtwData_t *gtwData);
+
 
 /******************************************************************************
  * GLOBAL VARIABLES
@@ -297,10 +297,8 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
     }
     if ( keys & HAL_KEY_SW_2 )
     {
+      //bind second time with sensor.
       zb_BindDevice(true,DOOR_STATUS_CMD_ID,(uint8 *)NULL);
-      //when key 2 is pressed, bind back to sensor.
-      //appState = APP_BIND;
-      //osal_set_event( sapi_TaskID, MY_FIND_COLLECTOR_EVT );
     }
     if ( keys & HAL_KEY_SW_3 )
     {
@@ -312,7 +310,7 @@ void zb_HandleKeys( uint8 shift, uint8 keys )
 }
 
 static void sendLampStatusMessage(void){
-     //send back to let the user know the lamp is on.
+   //send back to let the user know the lamp is on.
    uint8 pData[1];
    pData[0]= (uint8)lampIsActivated;
    zb_SendDataRequest( ZB_BINDING_ADDR, LED_REPORT_CMD_ID, 1, pData, 0, AF_MSG_ACK_REQUEST, 0 );
@@ -410,29 +408,16 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
 {
   if( status == ZB_SUCCESS )
   {
-
     if(commandId == LED_REPORT_CMD_ID){
       HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
       sendLampStatusMessage(); //send current lamp status.
       appState = APP_RUN; //finsihed binding.
     }
-     else if(commandId == DOOR_STATUS_CMD_ID){
+    else if(commandId == DOOR_STATUS_CMD_ID){
       HalLedSet( HAL_LED_2, HAL_LED_MODE_OFF );
       sendCurrentDoorStatus(); //send current door status.
       appState = APP_RUN; //finsihed binding.
     }
-  }
-  else
-  {
-    //todo
-  //  if ( ++bindRetries >= 2 ) {
-      // Reset the system
- //     zb_SystemReset();
- //   }
- //   else
- //   {
- //     osal_start_timerEx( sapi_TaskID, MY_FIND_COLLECTOR_EVT, myBindRetryDelay );
- //   }
   }
 }
 
@@ -447,22 +432,21 @@ void zb_BindConfirm( uint16 commandId, uint8 status )
  */
 void zb_AllowBindConfirm( uint16 source )
 {
-  static bool lampisBinded=false;
+   (void)source;
+    
+    static bool lampisBinded=false;
 
   if(!lampisBinded){ //first bootup the router
-  //connect door
-    //DO NOT BIND WITH SOURCE, BUT WITH NULL!!!
-  zb_BindDevice(true,DOOR_STATUS_CMD_ID,(uint8 *)NULL);
-  
-  lampisBinded=true;
+    //connect door
+    zb_BindDevice(true,DOOR_STATUS_CMD_ID,(uint8 *)NULL);
+    lampisBinded=true;
   }
   else{
-  //connect lamp
-    //DO NOT BIND WITH SOURCE, BUT WITH NULL!!!
-  zb_BindDevice(true,LED_REPORT_CMD_ID,(uint8 *)NULL);
+    //connect lamp
+    zb_BindDevice(true,LED_REPORT_CMD_ID,(uint8 *)NULL);
   }
     
-  (void)source;
+
 }
 
 /******************************************************************************
@@ -506,8 +490,6 @@ void zb_ReceiveDataIndication( uint16 source, uint16 command, uint16 len, uint8 
   else if(command == KEYLOCK_CMD_ID){
      openDoor(pData[0]);
   }
-  
-  
 }
 
 /******************************************************************************
